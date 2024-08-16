@@ -1,0 +1,23 @@
+"Games"
+{
+    "tf"
+    {
+        "Offsets"
+        {
+            // ../shared/tf/tf_weaponbase_gun.cpp
+            "CTFWeaponBaseGun::FireProjectile"
+            {
+                "linux"     "477"
+            }
+        }
+        "Signatures"
+        {
+            // ../server/tf/tf_player.cpp
+            "CTFPlayer::GiveNamedItem"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9CTFPlayer13GiveNamedItemEPKciPK13CEconItemViewb"
+            }
+        }
+    }
+}

@@ -1,0 +1,20 @@
+"Games"
+{
+    "tf"
+    {
+        "Signatures"
+        {
+            // ../server/tf/tf_player.h
+            "CTFPlayer::RemoveAllOwnedEntitiesFromWorld"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9CTFPlayer31RemoveAllOwnedEntitiesFromWorldEb"
+            }
+            "CTFPlayer::DeathSound"
+            {
+                "library"   "server"
+                "linux"     "@_ZN9CTFPlayer10DeathSoundERK15CTakeDamageInfo"
+            }
+        }
+    }
+}
