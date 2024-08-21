@@ -204,6 +204,8 @@ public void HttpResponseCallback(bool success, const char[] err,
 			SetClientCookie(client, g_ckiName, name);
 			SetClientCookie(client, g_ckiTeam, team);
 		}
+
+		delete content;
 	}
 	else
 	{
@@ -259,14 +261,17 @@ bool ParsePlayerInformation(char[] name, char[] team, const char[] json)
 	if (StrEqual("player", key))
 	{
 		Handle player = json_object_iter_value(iter);
+		Handle player_iter = json_object_iter(player);
 
+		/*
 		CloseHandle(iter);
 		iter = json_object_iter(player);
+		*/
 
-		while (iter != INVALID_HANDLE)
+		while (player_iter != INVALID_HANDLE)
 		{
-			json_object_iter_key(iter, key, sizeof(key));
-			Handle value = json_object_iter_value(iter);
+			json_object_iter_key(player_iter, key, sizeof(key));
+			Handle value = json_object_iter_value(player_iter);
 
 			if (StrEqual(key, "name"))
 			{
@@ -277,11 +282,12 @@ bool ParsePlayerInformation(char[] name, char[] team, const char[] json)
 				ParseTeam(team, value);
 			}
 		
-			iter = json_object_iter_next(player, iter);
+			player_iter = json_object_iter_next(player, player_iter);
 			delete value;
 		}
 
 		delete player;
+		delete player_iter;
 	}
 	else
 	{
