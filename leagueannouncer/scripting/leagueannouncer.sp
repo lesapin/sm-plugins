@@ -204,8 +204,6 @@ public void HttpResponseCallback(bool success, const char[] err,
 			SetClientCookie(client, g_ckiName, name);
 			SetClientCookie(client, g_ckiTeam, team);
 		}
-
-		delete content;
 	}
 	else
 	{
