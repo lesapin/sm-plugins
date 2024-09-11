@@ -2,21 +2,21 @@
 
 #include <sourcemod>
 #include <clientprefs>
-#include <system2>
+#include <SteamWorks>
 #include <smjansson>
 #include <morecolors>
 
 #pragma newdecls required
 
-#define PL_VERSION "0.9.1"
+#define PL_VERSION "0.9.7"
 
 public Plugin myinfo =
 {
-    	name = "League Announcer",
-    	author = "bzdmn",
-    	description = "Query league API for player information",
-    	version = PL_VERSION,
-    	url = "https://mge.me"
+    name = "League Announcer",
+    author = "bzdmn",
+    description = "Query league API for player information",
+    version = PL_VERSION,
+    url = "https://mge.me"
 };
 
 #define MAX_TEAM_LENGTH 64
@@ -24,9 +24,9 @@ public Plugin myinfo =
 
 enum League
 {
-	ETF2L = 0,
-	RGL = 1,
-	OZF = 2
+    ETF2L = 0,
+    RGL = 1,
+    OZF = 2
 };
 
 League targetLeague;
@@ -42,7 +42,7 @@ bool plDisabled = false;
 // Update player league information once a week
 int updateInterval = 7 * 24 * 60 * 60;
 
-#define ETF2L_API "api.etf2l.org/player/"
+#define ETF2L_API "http://api.etf2l.org/player/"
 #define RGL_API ""
 #define OZF_API ""
 
@@ -50,316 +50,317 @@ char API_URL[256] = ETF2L_API;
 
 public void OnPluginStart()
 {
-	HookEvent("player_connect_client", Event_PlayerConnect, EventHookMode_Pre);
+    HookEvent("player_connect_client", Event_PlayerConnect, EventHookMode_Pre);
 
-	// Initialize client cookies
+    // Initialize client cookies
 
-	g_ckiName = RegClientCookie
-	(
-		"leagueannouncer_name", 
-		"Use your league name in-game instead of Steam name",
-		CookieAccess_Private
-	);
+    g_ckiName = RegClientCookie
+    (
+        "leagueannouncer_name", 
+        "Use your league name in-game instead of Steam name",
+        CookieAccess_Private
+    );
 
-	g_ckiTeam = RegClientCookie
-	(
-		"leagueannouncer_team", 
-		"Choose which team name to use (6v6/9v9)",
-		CookieAccess_Private
-	);
+    g_ckiTeam = RegClientCookie
+    (
+        "leagueannouncer_team", 
+        "Choose which team name to use (6v6/9v9)",
+        CookieAccess_Private
+    );
 
-	// Initialize ConVars
+    // Initialize ConVars
 
-	g_cvDisabled = CreateConVar
-	(
-		"sm_league_announcer_disabled", "0",
-		"Disable player information query and announce", 
-		_, 
-		true, 0.0, true, 1.0
-	);
+    g_cvDisabled = CreateConVar
+    (
+        "sm_league_announcer_disabled", "0",
+        "Disable player information query and announce", 
+        _, 
+        true, 0.0, true, 1.0
+    );
 
-	g_cvLeague = CreateConVar
-	(
-		"sm_league_announcer", "0",
-		"Query ETF2L (=0), RGL (=1) or OZF (=2) for player information", 
-		_, 
-		true, 0.0, true, 2.0
-	);
+    g_cvLeague = CreateConVar
+    (
+        "sm_league_announcer", "0",
+        "Query ETF2L (=0), RGL (=1) or OZF (=2) for player information", 
+        _, 
+        true, 0.0, true, 2.0
+    );
 
-	CreateConVar
-	(
-		"sm_league_announcer_version", 
-		PL_VERSION,
-		"League Announcer version",
-        	FCVAR_SPONLY | FCVAR_CHEAT
-	);
+    CreateConVar
+    (
+        "sm_league_announcer_version", 
+        PL_VERSION,
+        "League Announcer version",
+            FCVAR_SPONLY | FCVAR_CHEAT
+    );
 
-	g_cvDisabled.AddChangeHook(CVar_Disabled);
-	g_cvLeague.AddChangeHook(CVar_League);
-}
-
-public void OnClientAuthorized(int client, const char[] auth)
-{
-	if (!plDisabled && !StrEqual(auth, "BOT"))
-	{
-		DataPack pack;
-		CreateDataTimer(TIME_COOKIES_CACHED, Timer_AreCookiesCached, pack);
-
-		pack.WriteCell(client);
-		pack.WriteString(auth);
-		pack.Reset();
-	}
-	else
-	{
-		AnnouncePlayer(client, "", "");
-	}
+    g_cvDisabled.AddChangeHook(CVar_Disabled);
+    g_cvLeague.AddChangeHook(CVar_League);
 }
 
 public Action Event_PlayerConnect(Handle ev, const char[] name, bool dontBroadcast)
 {
-	SetEventBroadcast(ev, true);
-	return Plugin_Continue;
+    SetEventBroadcast(ev, true);
+    return Plugin_Continue;
+}
+
+public void OnClientAuthorized(int client, const char[] auth)
+{
+    if (!plDisabled && !StrEqual(auth, "BOT"))
+    {
+        DataPack pack;
+        CreateDataTimer(TIME_COOKIES_CACHED, Timer_AreCookiesCached, pack);
+
+        pack.WriteCell(client);
+        pack.WriteString(auth);
+        pack.Reset();
+    }
+    else
+    {
+        AnnouncePlayer(client, "", "");
+    }
 }
 
 public Action Timer_AreCookiesCached(Handle timer, Handle data)
 {
-	DataPack pack = view_as<DataPack>(data);
+    DataPack pack = view_as<DataPack>(data);
 
-	char url[256];
-	char auth[64];
+    char url[256];
+    char auth[64];
 
-	int client = pack.ReadCell();
-	pack.ReadString(auth, sizeof(auth));
+    int client = pack.ReadCell();
+    pack.ReadString(auth, sizeof(auth));
 
-	strcopy(url, sizeof(url), API_URL);
-	StrCat(url, sizeof(url), auth);
+    strcopy(url, sizeof(url), API_URL);
+    StrCat(url, sizeof(url), auth);
 
-	System2HTTPRequest httpReq = new System2HTTPRequest
-	(
-		HttpResponseCallback,
-		url
-	);
+    Handle hRequest = SteamWorks_CreateHTTPRequest(k_EHTTPMethodGET, url);
 
-	httpReq.Timeout = 10;
-	httpReq.Any = client;
-	httpReq.SetHeader("Accept", "application/json");
+    if 
+    (
+        !hRequest
+        || !SteamWorks_SetHTTPCallbacks(hRequest, SW_HttpResponseCallback)
+        || !SteamWorks_SetHTTPRequestHeaderValue(hRequest, "Accept", "application/json")
+        || !SteamWorks_SetHTTPRequestContextValue(hRequest, client)
+    )
+    {
+        LogError("SteamWorks failed to prepare HTTP request");
+        delete hRequest;
+    }
 
-	if (AreClientCookiesCached(client))
-	{
-		int lastUpdate = GetClientCookieTime(client, g_ckiTeam);
+    if (AreClientCookiesCached(client))
+    {
+        int lastUpdate = GetClientCookieTime(client, g_ckiTeam);
 
-		if (GetTime() - lastUpdate > updateInterval)
-		{
-			httpReq.GET();
-		}
-		else
-		{
-			char name[MAX_NAME_LENGTH];
-			char team[MAX_TEAM_LENGTH];
+        if (GetTime() - lastUpdate > updateInterval)
+        {
+            if (!SteamWorks_SendHTTPRequest(hRequest))
+            {
+                LogError("SteamWorks failed to send HTTP request");
+                delete hRequest;
+            }
+        }
+        else
+        {
+            char name[MAX_NAME_LENGTH];
+            char team[MAX_TEAM_LENGTH];
 
-			GetClientCookie(client, g_ckiName, name, sizeof(name));
-			GetClientCookie(client, g_ckiTeam, team, sizeof(team));
+            GetClientCookie(client, g_ckiName, name, sizeof(name));
+            GetClientCookie(client, g_ckiTeam, team, sizeof(team));
 
-			AnnouncePlayer(client, name, team);
-		}
-	}
-	else
-	{
-		httpReq.GET();
-	}
-	
-	delete httpReq;
-	
-	return Plugin_Continue;
+            AnnouncePlayer(client, name, team);
+        }
+    }
+    else
+    {
+        if (!SteamWorks_SendHTTPRequest(hRequest))
+        {
+            LogError("SteamWorks failed to send HTTP request");
+            delete hRequest;
+        }
+    }
+    
+    return Plugin_Continue;
 }
 
-public void HttpResponseCallback(bool success, const char[] err, 
-	System2HTTPRequest req, System2HTTPResponse response, HTTPRequestMethod method)
+public void SW_HttpResponseCallback(Handle hRequest, bool failure, bool requestSuccess, EHTTPStatusCode code, any data)
 {
-	int client = req.Any;
+    if (!failure && requestSuccess && code == k_EHTTPStatusCode200OK)
+    {
+        SteamWorks_GetHTTPResponseBodyCallback(hRequest, SW_ResponseBody, data);
+    }
+    else
+    {
+        LogError("HttpResponseCallback Error (code %d)", code);
+        AnnouncePlayer(view_as<int>(data), "", "");
+    }
 
-	char name[MAX_NAME_LENGTH];
-	char team[MAX_TEAM_LENGTH];
+    delete hRequest;
+}
 
-	if (success)
-	{
-		char url[256];
-		response.GetLastURL(url, sizeof(url));
+public void SW_ResponseBody(const char[] response, any value)
+{
+    int client = view_as<int>(value);
+    char team[MAX_TEAM_LENGTH];
+    char name[MAX_NAME_LENGTH];
 
-		char[] content = new char[response.ContentLength + 1];
-		response.GetContent(content, response.ContentLength + 1);
-
-		int code = response.StatusCode;
-
-#if defined DEBUG
-		float time = response.TotalTime;
-		PrintToServer("Request to %s finished with code: %d in %.2f seconds", url, code, time);
-		PrintToServer("Reply: %s", content);
-#endif
-
-		if (code == 200)
-		{
-			ParsePlayerInformation(name, team, content);
-
-			SetClientCookie(client, g_ckiName, name);
-			SetClientCookie(client, g_ckiTeam, team);
-		}
-	}
-	else
-	{
-		char realname[MAX_NAME_LENGTH];
-		GetClientName(client, realname, sizeof(realname));
-
-		LogError("HttpResponseCallback Error (%s): %s", realname, err);
-	}
-	
-	AnnouncePlayer(client, name, team);
+    if (ParsePlayerInformation(name, team, response))
+    {
+        SetClientCookie(client, g_ckiName, name);
+        SetClientCookie(client, g_ckiTeam, team);
+    }
+    else
+    {
+        LogError("SW_ResponseBody failed to parse response");
+    }
+    
+    AnnouncePlayer(client, name, team);
 }
 
 void CVar_Disabled(ConVar cvar, char[] oldval, char[] newval)
 {
-	plDisabled = StringToInt(newval) == 1 ? true : false;
+    plDisabled = StringToInt(newval) == 1 ? true : false;
 }
 
 void CVar_League(ConVar cvar, char[] oldval, char[] newval)
 {
-	targetLeague = view_as<League>(StringToInt(newval));
+    targetLeague = view_as<League>(StringToInt(newval));
 
-	switch (targetLeague)
-	{
-		case ETF2L:
-		{
-			strcopy(API_URL, sizeof(API_URL), ETF2L_API);
-		}
-		case RGL:
-		{
-			strcopy(API_URL, sizeof(API_URL), RGL_API);
-		}
-		case OZF:
-		{
-			strcopy(API_URL, sizeof(API_URL), OZF_API);
-		}
-	}
+    switch (targetLeague)
+    {
+        case ETF2L:
+        {
+            strcopy(API_URL, sizeof(API_URL), ETF2L_API);
+        }
+        case RGL:
+        {
+            strcopy(API_URL, sizeof(API_URL), RGL_API);
+        }
+        case OZF:
+        {
+            strcopy(API_URL, sizeof(API_URL), OZF_API);
+        }
+    }
 }
 
 bool ParsePlayerInformation(char[] name, char[] team, const char[] json)
 {
-	Handle obj = json_load(json);
-	Handle iter = json_object_iter(obj);
+    Handle obj = json_load(json);
+    Handle iter = json_object_iter(obj);
 
-	char key[32];
-	json_object_iter_key(iter, key, sizeof(key));
+    char key[32];
+    json_object_iter_key(iter, key, sizeof(key));
 
-	if (StrEqual("status", key))
-	{
-		iter = json_object_iter_next(obj, iter);
-		json_object_iter_key(iter, key, sizeof(key));
-	}
+    if (StrEqual("status", key))
+    {
+        iter = json_object_iter_next(obj, iter);
+        json_object_iter_key(iter, key, sizeof(key));
+    }
 
-	if (StrEqual("player", key))
-	{
-		Handle player = json_object_iter_value(iter);
-		Handle player_iter = json_object_iter(player);
+    if (StrEqual("player", key))
+    {
+        Handle player = json_object_iter_value(iter);
+        Handle player_iter = json_object_iter(player);
 
-		/*
-		CloseHandle(iter);
-		iter = json_object_iter(player);
-		*/
+        /*
+        CloseHandle(iter);
+        iter = json_object_iter(player);
+        */
 
-		while (player_iter != INVALID_HANDLE)
-		{
-			json_object_iter_key(player_iter, key, sizeof(key));
-			Handle value = json_object_iter_value(player_iter);
+        while (player_iter != INVALID_HANDLE)
+        {
+            json_object_iter_key(player_iter, key, sizeof(key));
+            Handle value = json_object_iter_value(player_iter);
 
-			if (StrEqual(key, "name"))
-			{
-				json_string_value(value, name, MAX_NAME_LENGTH);
-			}
-			else if (StrEqual(key, "teams"))
-			{
-				ParseTeam(team, value);
-			}
-		
-			player_iter = json_object_iter_next(player, player_iter);
-			delete value;
-		}
+            if (StrEqual(key, "name"))
+            {
+                json_string_value(value, name, MAX_NAME_LENGTH);
+            }
+            else if (StrEqual(key, "teams"))
+            {
+                ParseTeam(team, value);
+            }
+        
+            player_iter = json_object_iter_next(player, player_iter);
+            delete value;
+        }
 
-		delete player;
-		delete player_iter;
-	}
-	else
-	{
-		delete obj;
-		delete iter;
-		
-		return false;
-	}
+        delete player;
+        delete player_iter;
+    }
+    else
+    {
+        delete obj;
+        delete iter;
+        
+        return false;
+    }
 
-	delete obj;
-	delete iter;
-		
-	return true;
+    delete obj;
+    delete iter;
+        
+    return true;
 }
 
 void ParseTeam(char[] team, Handle obj)
 {
-	char type[32];
-	
-	for (int elem = 0; elem < json_array_size(obj) && !StrEqual(type, "6v6"); elem++)
-	{
-		Handle entry = json_array_get(obj, elem);
-		Handle iter = json_object_iter(entry);
-		
-		char key[32];
+    char type[32];
+    
+    for (int elem = 0; elem < json_array_size(obj) && !StrEqual(type, "6v6"); elem++)
+    {
+        Handle entry = json_array_get(obj, elem);
+        Handle iter = json_object_iter(entry);
+        
+        char key[32];
 
-		while (iter != INVALID_HANDLE)
-		{
-			json_object_iter_key(iter, key, sizeof(key));
-			Handle value = json_object_iter_value(iter);
+        while (iter != INVALID_HANDLE)
+        {
+            json_object_iter_key(iter, key, sizeof(key));
+            Handle value = json_object_iter_value(iter);
 
-			if (StrEqual(key, "name"))
-			{
-				json_string_value(value, team, MAX_TEAM_LENGTH);
-			}
-			else if (StrEqual(key, "type"))
-			{
-				json_string_value(value, type, sizeof(type));
-			}
+            if (StrEqual(key, "name"))
+            {
+                json_string_value(value, team, MAX_TEAM_LENGTH);
+            }
+            else if (StrEqual(key, "type"))
+            {
+                json_string_value(value, type, sizeof(type));
+            }
 
-			delete value;
-			iter = json_object_iter_next(entry, iter);
-		}
+            delete value;
+            iter = json_object_iter_next(entry, iter);
+        }
 
-		delete entry;
-		delete iter;
-	}
+        delete entry;
+        delete iter;
+    }
 }
 
 void AnnouncePlayer(int client, const char[] name, const char[] team)
 {
-	if (!IsClientConnected(client))
-	{
-		return;
-	}
+    if (!IsClientConnected(client))
+    {
+        return;
+    }
 
-	char realname[MAX_NAME_LENGTH];
-	GetClientName(client, realname, sizeof(realname));
+    char realname[MAX_NAME_LENGTH];
+    GetClientName(client, realname, sizeof(realname));
 
-	if (strlen(name) != 0)
-	{
-		if (strlen(team) != 0)
-		{
-			MC_PrintToChatAll("{default}%s ({lightgreen}%s{default}, {lightgreen}%s{default}) \
-				has joined the game", realname, name, team);			   
-		}
-		else
-		{
-			MC_PrintToChatAll("{default}%s ({lightgreen}%s{default}) \
-				has joined the game", realname, name);			   
-		}
-	}
-	else
-	{
-		MC_PrintToChatAll("{default}%s has joined the game", realname);
-	}
+    if (strlen(name) != 0)
+    {
+        if (strlen(team) != 0)
+        {
+            MC_PrintToChatAll("{default}%s ({lightgreen}%s{default}, {lightgreen}%s{default}) \
+                has joined the game", realname, name, team);               
+        }
+        else
+        {
+            MC_PrintToChatAll("{default}%s ({lightgreen}%s{default}) \
+                has joined the game", realname, name);             
+        }
+    }
+    else
+    {
+        MC_PrintToChatAll("{default}%s has joined the game", realname);
+    }
 }
