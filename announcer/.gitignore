@@ -2,4 +2,4 @@ Makefile
 spcomp
 compile.*
 **/empty
-**/configs/databases.cfg
+sourcemod/configs/databases.cfg
