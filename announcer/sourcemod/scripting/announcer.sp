@@ -8,11 +8,11 @@
 
 #pragma newdecls required
 
-#define PL_VERSION "1.0.2"
+#define PL_VERSION "1.1.2"
 
 public Plugin myinfo =
 {
-    name        = "PlayerAnnouncer",
+    name        = "Announcer",
     author      = "bzdmn",
     description = "Query and announce player information using ETF2L API",
     version     = PL_VERSION,
