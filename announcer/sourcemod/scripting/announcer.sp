@@ -153,7 +153,7 @@ public Action Timer_AreCookiesCached(Handle timer, Handle data)
     )
     {
         LogError("SteamWorks failed to prepare HTTP request");
-        delete hRequest;
+        CloseHandle(hRequest);
     }
 
     if (AreClientCookiesCached(client))
@@ -165,11 +165,13 @@ public Action Timer_AreCookiesCached(Handle timer, Handle data)
             if (!SteamWorks_SendHTTPRequest(hRequest))
             {
                 LogError("SteamWorks failed to send HTTP request");
-                delete hRequest;
+                CloseHandle(hRequest);
             }
         }
         else
         {
+            CloseHandle(hRequest);
+
             char name[MAX_NAME_LENGTH];
             char team[MAX_TEAM_LENGTH];
 
@@ -184,7 +186,7 @@ public Action Timer_AreCookiesCached(Handle timer, Handle data)
         if (!SteamWorks_SendHTTPRequest(hRequest))
         {
             LogError("SteamWorks failed to send HTTP request");
-            delete hRequest;
+            CloseHandle(hRequest);
         }
     }
     
@@ -208,7 +210,7 @@ public void SW_HttpResponseCallback(Handle hRequest, bool failure, bool requestS
         AnnouncePlayer(view_as<int>(data), "", "");
     }
 
-    delete hRequest;
+    CloseHandle(hRequest);
 }
 
 public void SW_ResponseBody(const char[] response, any value)
@@ -268,7 +270,7 @@ bool ParsePlayerInformation(char[] name, char[] team, const char[] vdf)
     }
     while (kv.GotoNextKey());
 
-    delete kv;
+    CloseHandle(kv);
 
     return true;
 }
