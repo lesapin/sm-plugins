@@ -4,7 +4,7 @@
 #include <keyvalues>
 #include <clientprefs>
 #include <SteamWorks>
-#include <morecolors>
+#include <colors>
 
 #pragma newdecls required
 
@@ -270,7 +270,8 @@ bool ParsePlayerInformation(char[] name, char[] team, const char[] vdf)
     }
     while (kv.GotoNextKey());
 
-    CloseHandle(kv);
+    kv.Rewind();
+    delete kv;
 
     return true;
 }
@@ -289,18 +290,18 @@ void AnnouncePlayer(int client, const char[] name, const char[] team)
     {
         if (strlen(team) != 0)
         {
-            MC_PrintToChatAll("{default}%s ({lightgreen}%s{default}, {lightgreen}%s{default}) \
+            CPrintToChatAll("{default}%s ({lightgreen}%s{default}, {lightgreen}%s{default}) \
                 has joined the game", realname, name, team);               
         }
         else
         {
-            MC_PrintToChatAll("{default}%s ({lightgreen}%s{default}) \
+            CPrintToChatAll("{default}%s ({lightgreen}%s{default}) \
                 has joined the game", realname, name);             
         }
     }
     else
     {
-        MC_PrintToChatAll("{default}%s has joined the game", realname);
+        CPrintToChatAll("{default}%s has joined the game", realname);
     }
 }
 
