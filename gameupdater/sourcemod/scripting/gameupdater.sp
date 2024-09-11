@@ -1,6 +1,7 @@
 #pragma semicolon 1
 
 #include <sourcemod>
+#include <keyvalues>
 #include <SteamWorks>
 
 #pragma newdecls required
@@ -120,7 +121,7 @@ void ISteamApps_UpToDateCheck()
     FormatEx
     (
         url, sizeof(url), 
-        "http://api.steampowered.com/ISteamApps/UpToDateCheck/v1/?appid=%d&version=%d&format=xml",
+        "http://api.steampowered.com/ISteamApps/UpToDateCheck/v1/?appid=%d&version=%d&format=vdf",
         g_iAppId, g_iPatchVersion
     );
 
@@ -159,15 +160,20 @@ void SW_ParseResponse(const char[] response)
         PrintToServer("response:\n%s", response);
     }
 
-    if (StrContains(response, "<required_version>") >= 0)
+    KeyValues kv = CreateKeyValues("response");
+    kv.ImportFromString(response, "response");
+
+    if (!kv.GetNum("up_to_date"))
     {
         g_State = Update_New;
 
-        PrintToChatAll("A new game update has released, RESTARTING THE SERVER on MapEnd");
-        LogMessage("New Game Version released, RESTARTING THE SERVER");
+        PrintToChatAll("New game update released, RESTARTING THE SERVER");
+        LogMessage("Version %d released, RESTARTING THE SERVER", kv.GetNum("required_version"));
         ServerCommand("sv_shutdown");
         /* SystemD is configured to automatically restart the server after shutdown */
     }
+
+    delete kv;
 }
 
 int ParseSteamInf(const char[] path)
