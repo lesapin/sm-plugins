@@ -1,11 +1,5 @@
 Makefile
 spcomp
 compile.*
-**/bin/empty
-**/extensions/empty
-**/data/*
+**/empty
 **/configs/databases.cfg
-**/configs/empty
-**/plugins/empty
-**/plugins/disabled/empty
-**/translations/empty
