@@ -1,0 +1,17 @@
+Makefile
+spcomp
+compile.*
+start_ssh_agent.sh
+/bin/empty
+/extensions/empty
+/data/*
+/gamedata/core.games/*
+/gamedata/sdkhooks.games/*
+/gamedata/sdktools.games/*
+/gamedata/sm-cstrike.games/*
+/gamedata/sm-tf2.games.txt
+/configs/databases.cfg
+/configs/empty
+/plugins/empty
+/plugins/disabled/empty
+/translations/empty
