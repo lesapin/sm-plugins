@@ -5,7 +5,7 @@
 
 #pragma newdecls required
 
-#define PL_VERSION "1.0.3"
+#define PL_VERSION "1.0.4"
 
 public Plugin myinfo = 
 {
@@ -113,6 +113,8 @@ public Action OnRoundEnd(Event event, const char[] name, bool dontBroadcast)
 
 void ISteamApps_UpToDateCheck()
 {
+    g_State = Update_NotNew;
+
     char url[256];
 
     FormatEx
@@ -159,9 +161,11 @@ void SW_ParseResponse(const char[] response)
 
     if (StrContains(response, "<required_version>") >= 0)
     {
+        g_State = Update_New;
+
         PrintToChatAll("A new game update has released, RESTARTING SERVER on MapEnd");
         ServerCommand("sv_shutdown");
-        /* Server is restarted by systemd automatically */
+        /* SystemD is configured to automatically restart the server after shutdown */
     }
 }
 
