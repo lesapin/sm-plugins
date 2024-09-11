@@ -1,0 +1,5 @@
+Makefile
+spcomp
+compile.*
+**/empty
+sourcemod/configs/databases.cfg
