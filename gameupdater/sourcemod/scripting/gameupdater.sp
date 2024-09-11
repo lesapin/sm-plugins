@@ -163,7 +163,8 @@ void SW_ParseResponse(const char[] response)
     {
         g_State = Update_New;
 
-        PrintToChatAll("A new game update has released, RESTARTING SERVER on MapEnd");
+        PrintToChatAll("A new game update has released, RESTARTING THE SERVER on MapEnd");
+        LogMessage("New Game Version released, RESTARTING THE SERVER");
         ServerCommand("sv_shutdown");
         /* SystemD is configured to automatically restart the server after shutdown */
     }
