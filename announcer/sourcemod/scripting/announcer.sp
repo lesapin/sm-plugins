@@ -199,7 +199,12 @@ public void SW_HttpResponseCallback(Handle hRequest, bool failure, bool requestS
     }
     else
     {
-        LogError("HttpResponseCallback Error (code %d)", code);
+        /* status code 500 means that the player is not registered on ETF2L */
+        if (code != k_EHTTPStatusCode500InternalServerError)
+        {
+            LogError("HttpResponseCallback Error (code %d)", code);
+        }        
+
         AnnouncePlayer(view_as<int>(data), "", "");
     }
 
