@@ -92,6 +92,11 @@ public Action Test_SetTimelimit(int args)
 }
 #endif
 
+public void OnMapStart()
+{
+	g_State = Update_NotChecked;
+}
+
 public void OnMapEnd()
 {
 	if (g_State == Update_NotChecked)
